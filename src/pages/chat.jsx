@@ -1,7 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
+
+// ─── Echo singleton (module level is fine, just the instance) ─────────────────
+window.Pusher = Pusher;
+console.log(import.meta.env);
+console.log(import.meta.env.VITE_REVERB_APP_KEY);   
+const echo = new Echo({
+  broadcaster: "reverb",
+  key: import.meta.env.VITE_REVERB_APP_KEY,
+  wsHost: import.meta.env.VITE_REVERB_HOST,
+  wsPort: import.meta.env.VITE_REVERB_PORT,
+  forceTLS: false,
+  enabledTransports: ["ws"],
+});
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 40 }) {
@@ -138,6 +153,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
 
+  // ── Load conversations on mount ─────────────────────────────────────────────
   useEffect(() => {
     const loadConversations = async () => {
       try {
@@ -147,21 +163,30 @@ export default function Chat() {
         console.log(err);
       }
     };
-
     loadConversations();
   }, []);
 
+  // ── refreshConversations — declared before the useEffects that call it ───────
+  const refreshConversations = useCallback(async () => {
+    try {
+      const { data } = await api.get("/api/conversations");
+      setConversations(data);
+    } catch (err) {
+      console.log(err);
+    }
+  }, []);
+
+  // ── Load messages + subscribe to Reverb when activeConv changes ─────────────
   useEffect(() => {
     if (!activeConv) return;
 
+    // Load existing messages via REST
     const loadMessages = async () => {
       setLoadingMsgs(true);
-
       try {
         const { data } = await api.get(
           `/api/conversations/${activeConv.id}/messages`,
         );
-
         setMessages(data);
       } catch (err) {
         console.log(err);
@@ -169,22 +194,29 @@ export default function Chat() {
         setLoadingMsgs(false);
       }
     };
-
     loadMessages();
-  }, [activeConv]);
 
+    // Subscribe to the private channel for this conversation
+    echo.private(`conversation.${activeConv.id}`).listen("MessageSent", (e) => {
+      // Only add incoming messages (not our own — we already add those optimistically)
+      setMessages((prev) => {
+        const alreadyExists = prev.some((m) => m.id === e.message.id);
+        return alreadyExists ? prev : [...prev, e.message];
+      });
+      // Refresh sidebar preview
+      refreshConversations();
+    });
+
+    // Cleanup: leave channel when switching conversations or unmounting
+    return () => {
+      echo.leave(`conversation.${activeConv.id}`);
+    };
+  }, [activeConv, refreshConversations]);
+
+  // ── Auto-scroll to bottom ───────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const refreshConversations = async () => {
-    try {
-      const { data } = await api.get("/api/conversations");
-      setConversations(data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
 
   const otherUser = (conv) => {
     if (!conv) return null;
@@ -201,6 +233,7 @@ export default function Chat() {
         `/api/conversations/${activeConv.id}/messages`,
         payload,
       );
+      // Optimistically add our own message immediately
       setMessages((prev) => [...prev, data]);
       setText("");
       setReplyTo(null);
@@ -248,7 +281,6 @@ export default function Chat() {
     <div className="chat-layout">
       {/* ── Col 1: Sidebar ── */}
       <div className="col-sidebar">
-        {/* Top bar */}
         <div className="sidebar-topbar">
           <div className="sidebar-brand">
             <span className="brand-hex">⬡</span>
@@ -272,14 +304,12 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Me */}
         <div className="sidebar-me">
           <Avatar name={user?.name} size={34} />
           <span className="sidebar-me-name">{user?.name}</span>
           <span className="online-dot" />
         </div>
 
-        {/* Search */}
         <div className="sidebar-search-wrap">
           <input
             className="sidebar-search"
@@ -287,7 +317,6 @@ export default function Chat() {
           />
         </div>
 
-        {/* Conv list */}
         <div className="conv-scroll">
           {conversations.length === 0 && (
             <p className="conv-empty">
@@ -344,7 +373,6 @@ export default function Chat() {
           </div>
         ) : (
           <>
-            {/* Chat header */}
             <div className="msg-header">
               <Avatar name={other?.name} size={38} />
               <div className="msg-header-info">
@@ -359,7 +387,6 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* Messages */}
             <div className="messages-scroll">
               {loadingMsgs && <p className="msgs-loading">Loading…</p>}
               {messages.map((msg) => (
@@ -373,7 +400,6 @@ export default function Chat() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Reply banner */}
             {replyTo && (
               <div className="reply-banner">
                 <div>
@@ -391,7 +417,6 @@ export default function Chat() {
               </div>
             )}
 
-            {/* Input */}
             <div className="input-row">
               <textarea
                 className="msg-input"
@@ -469,7 +494,6 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Modal */}
       {showNewChat && (
         <NewChatModal
           onClose={() => setShowNewChat(false)}
