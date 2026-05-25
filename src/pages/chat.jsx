@@ -8,7 +8,7 @@ import Pusher from "pusher-js";
 // ─── Echo singleton (module level is fine, just the instance) ─────────────────
 window.Pusher = Pusher;
 console.log(import.meta.env);
-console.log(import.meta.env.VITE_REVERB_APP_KEY);   
+console.log(import.meta.env.VITE_REVERB_APP_KEY);
 const echo = new Echo({
   broadcaster: "reverb",
   key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -16,6 +16,13 @@ const echo = new Echo({
   wsPort: import.meta.env.VITE_REVERB_PORT,
   forceTLS: false,
   enabledTransports: ["ws"],
+  authEndpoint: "http://relayhub.test/api/broadcasting/auth",
+  auth: {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+      Accept: "application/json",
+    },
+  },
 });
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
