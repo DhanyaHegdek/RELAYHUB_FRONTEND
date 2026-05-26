@@ -5,7 +5,7 @@ import { useAuth } from "../context/useAuth";
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
-// ─── Echo singleton (module level is fine, just the instance) ─────────────────
+//  Echo singleton (module level is fine, just the instance)
 window.Pusher = Pusher;
 console.log(import.meta.env);
 console.log(import.meta.env.VITE_REVERB_APP_KEY);
@@ -25,7 +25,7 @@ const echo = new Echo({
   },
 });
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+//  Avatar
 function Avatar({ name, size = 40 }) {
   const initials =
     name
@@ -51,7 +51,7 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-// ─── New Chat Modal ────────────────────────────────────────────────────────────
+//  New Chat Modal
 function NewChatModal({ onClose, onStart, currentUserId }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -111,7 +111,7 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
   );
 }
 
-// ─── Message Bubble ────────────────────────────────────────────────────────────
+//  Message Bubble
 function MessageBubble({ msg, isOwn, onReply }) {
   return (
     <div className={`msg-row ${isOwn ? "own" : "other"}`}>
@@ -145,7 +145,7 @@ function MessageBubble({ msg, isOwn, onReply }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main
 export default function Chat() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -160,7 +160,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
 
-  // ── Load conversations on mount ─────────────────────────────────────────────
+  //  Load conversations on mount
   useEffect(() => {
     const loadConversations = async () => {
       try {
@@ -173,7 +173,7 @@ export default function Chat() {
     loadConversations();
   }, []);
 
-  // ── refreshConversations — declared before the useEffects that call it ───────
+  //  refreshConversations — declared before the useEffects that call it
   const refreshConversations = useCallback(async () => {
     try {
       const { data } = await api.get("/api/conversations");
@@ -183,7 +183,7 @@ export default function Chat() {
     }
   }, []);
 
-  // ── Load messages + subscribe to Reverb when activeConv changes ─────────────
+  //  Load messages + subscribe to Reverb when activeConv changes
   useEffect(() => {
     if (!activeConv) return;
 
@@ -220,7 +220,7 @@ export default function Chat() {
     };
   }, [activeConv, refreshConversations]);
 
-  // ── Auto-scroll to bottom ───────────────────────────────────────────────────
+  //  Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
