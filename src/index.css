@@ -1390,9 +1390,6 @@ textarea {
   table-layout: fixed;
 }
 
-.up-table colgroup {
-}
-
 .up-table thead tr {
   border-bottom: 1px solid var(--border);
   background: var(--surface2);
