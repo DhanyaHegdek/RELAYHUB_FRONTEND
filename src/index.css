@@ -916,3 +916,789 @@ textarea {
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* ════════════════════════════════════════
+   USERS PAGE
+════════════════════════════════════════ */
+.users-page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 32px 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.users-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.users-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.back-btn {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  padding: 8px 14px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition:
+    color var(--t),
+    background var(--t);
+}
+.back-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.users-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.users-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.users-search-wrap {
+  margin-bottom: 20px;
+}
+
+.users-search {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 16px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--t);
+}
+.users-search:focus {
+  border-color: var(--accent);
+}
+.users-search::placeholder {
+  color: var(--text-muted);
+}
+
+.users-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.users-loading {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.users-table th {
+  padding: 12px 20px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.users-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.users-table tbody tr:hover {
+  background: var(--surface2);
+}
+
+.current-user-row {
+  background: rgba(79, 142, 247, 0.04);
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-cell-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.you-badge {
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid rgba(79, 142, 247, 0.3);
+}
+
+.email-cell {
+  color: var(--text-dim);
+}
+
+.date-cell {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+/* Role badge */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: capitalize;
+}
+
+.role-admin {
+  background: rgba(79, 142, 247, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(79, 142, 247, 0.3);
+}
+
+.role-user {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--text-dim);
+  border: 1px solid var(--border2);
+}
+
+/* Action buttons */
+.action-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  padding: 5px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition:
+    background var(--t),
+    color var(--t),
+    border-color var(--t);
+}
+.action-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.role-btn.promote {
+  color: var(--accent);
+  border-color: rgba(79, 142, 247, 0.3);
+}
+.role-btn.promote:hover {
+  background: rgba(79, 142, 247, 0.1);
+}
+
+.role-btn.demote {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.role-btn.demote:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.delete-btn:hover {
+  background: rgba(240, 82, 82, 0.1);
+  color: var(--danger);
+  border-color: rgba(240, 82, 82, 0.3);
+}
+
+/* Sidebar admin section */
+.sidebar-admin-section {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.manage-users-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--accent-glow);
+  border: 1px solid rgba(79, 142, 247, 0.25);
+  border-radius: var(--r-sm);
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--t),
+    border-color var(--t);
+}
+.manage-users-btn:hover {
+  background: rgba(79, 142, 247, 0.2);
+  border-color: rgba(79, 142, 247, 0.4);
+}
+
+.manage-users-icon {
+  font-size: 16px;
+}
+
+/* Create user form */
+.modal-body {
+  padding: 20px;
+}
+
+.create-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.role-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color var(--t);
+}
+.role-select:focus {
+  border-color: var(--accent);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  border-radius: var(--r-sm);
+  padding: 9px 18px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t);
+}
+.btn-secondary:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.form-error {
+  background: rgba(240, 82, 82, 0.1);
+  border: 1px solid rgba(240, 82, 82, 0.3);
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+}
+
+.modal-sm {
+  max-width: 340px;
+}
+
+/* Profile view inside modal */
+.profile-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 16px;
+  text-align: center;
+}
+
+.profile-view-avatar {
+  margin-bottom: 4px;
+}
+
+.profile-view-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-view-email {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.profile-view-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ════════════════════════════════════════
+   USERS PAGE (up-*)
+════════════════════════════════════════ */
+.up-page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 36px 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Top bar */
+.up-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.up-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.up-back-btn {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  padding: 9px 16px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-family: var(--font);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--t),
+    background var(--t);
+}
+.up-back-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.up-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.up-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* Search */
+.up-search-row {
+  margin-bottom: 20px;
+}
+
+.up-search {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 16px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--t);
+}
+.up-search:focus {
+  border-color: var(--accent);
+}
+.up-search::placeholder {
+  color: var(--text-muted);
+}
+
+/* Card */
+.up-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.up-empty {
+  padding: 60px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Table */
+.up-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.up-table colgroup {
+}
+
+.up-table thead tr {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.up-table th {
+  padding: 12px 20px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Column widths */
+.up-table th:nth-child(1),
+.up-table td:nth-child(1) {
+  width: 18%;
+}
+.up-table th:nth-child(2),
+.up-table td:nth-child(2) {
+  width: 24%;
+}
+.up-table th:nth-child(3),
+.up-table td:nth-child(3) {
+  width: 12%;
+}
+.up-table th:nth-child(4),
+.up-table td:nth-child(4) {
+  width: 15%;
+}
+.up-table th:nth-child(5),
+.up-table td:nth-child(5) {
+  width: 31%;
+}
+
+.up-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.up-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.up-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* User cell — avatar + name side by side */
+.up-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-direction: row; /* explicit */
+}
+
+.up-user-name {
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.up-you {
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid rgba(79, 142, 247, 0.3);
+  flex-shrink: 0;
+}
+
+.up-email {
+  color: var(--text-dim);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-date {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+/* Role badge */
+.up-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.up-role-admin {
+  background: rgba(79, 142, 247, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(79, 142, 247, 0.3);
+}
+
+.up-role-user {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--text-dim);
+  border: 1px solid var(--border2);
+}
+
+/* Action buttons */
+.up-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.up-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--t),
+    color var(--t),
+    border-color var(--t);
+}
+.up-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.up-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.up-btn-promote {
+  color: var(--accent);
+  border-color: rgba(79, 142, 247, 0.3);
+}
+.up-btn-promote:hover {
+  background: rgba(79, 142, 247, 0.1);
+}
+
+.up-btn-demote {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.up-btn-demote:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.up-btn-delete {
+  color: var(--danger);
+  border-color: rgba(240, 82, 82, 0.3);
+}
+.up-btn-delete:hover {
+  background: rgba(240, 82, 82, 0.1);
+}
+
+/* Modal extras */
+.modal-body {
+  padding: 20px;
+}
+
+.create-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.role-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color var(--t);
+}
+.role-select:focus {
+  border-color: var(--accent);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  border-radius: var(--r-sm);
+  padding: 9px 18px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t);
+}
+.btn-secondary:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
+.form-error {
+  background: rgba(240, 82, 82, 0.1);
+  border: 1px solid rgba(240, 82, 82, 0.3);
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.modal-sm {
+  max-width: 340px;
+}
+
+.profile-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 16px;
+  text-align: center;
+}
+
+.profile-view-name {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.profile-view-email {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.profile-view-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ── Profile panel toggle ── */
+.col-profile.profile-closed {
+  display: none;
+}
+
+.col-profile.profile-open {
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.18s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Clickable header (avatar + name) ── */
+.msg-header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  flex: 1;
+  text-align: left;
+  transition: background var(--t);
+}
+
+.msg-header-profile-btn:hover {
+  background: var(--surface2);
+}

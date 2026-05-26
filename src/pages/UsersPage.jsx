@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 
-// Avatar
+//  Avatar
 function Avatar({ name, size = 36 }) {
   const initials =
     name
@@ -16,12 +16,19 @@ function Avatar({ name, size = 36 }) {
     [...(name || "")].reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
   return (
     <div
-      className="avatar"
       style={{
         width: size,
         height: size,
-        fontSize: size * 0.37,
+        borderRadius: "50%",
         background: `hsl(${hue},50%,55%)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 700,
+        color: "#fff",
+        fontSize: size * 0.37,
+        flexShrink: 0,
+        fontFamily: "inherit",
       }}
     >
       {initials}
@@ -129,7 +136,7 @@ function CreateUserModal({ onClose, onCreated }) {
   );
 }
 
-// Profile Modal
+// Create Profile Modal
 function ProfileModal({ userId, onClose }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -156,14 +163,12 @@ function ProfileModal({ userId, onClose }) {
             <p className="modal-empty">Loading…</p>
           ) : profile ? (
             <div className="profile-view">
-              <div className="profile-view-avatar">
-                <Avatar name={profile.name} size={64} />
-              </div>
+              <Avatar name={profile.name} size={64} />
               <div className="profile-view-name">{profile.name}</div>
               <div className="profile-view-email">{profile.email}</div>
-              <div className={`role-badge role-${profile.role}`}>
+              <span className={`role-badge role-${profile.role}`}>
                 {profile.role}
-              </div>
+              </span>
               <div className="profile-view-meta">
                 Joined{" "}
                 {new Date(profile.created_at).toLocaleDateString([], {
@@ -182,7 +187,7 @@ function ProfileModal({ userId, onClose }) {
   );
 }
 
-//  Main UsersPage
+//  Main
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -191,7 +196,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [viewProfileId, setViewProfileId] = useState(null);
-  const [actionLoading, setActionLoading] = useState(null); // tracks which user id is being actioned
+  const [actionLoading, setActionLoading] = useState(null);
   const [search, setSearch] = useState("");
 
   const fetchUsers = async () => {
@@ -258,16 +263,16 @@ export default function UsersPage() {
   );
 
   return (
-    <div className="users-page">
-      {/* ── Header ── */}
-      <div className="users-header">
-        <div className="users-header-left">
-          <button className="back-btn" onClick={() => navigate("/")}>
+    <div className="up-page">
+      {/* ── Top bar ── */}
+      <div className="up-topbar">
+        <div className="up-topbar-left">
+          <button className="up-back-btn" onClick={() => navigate("/")}>
             ← Back to Chat
           </button>
           <div>
-            <h1 className="users-title">Manage Users</h1>
-            <p className="users-sub">{users.length} total users</p>
+            <h1 className="up-title">Manage Users</h1>
+            <p className="up-subtitle">{users.length} total users</p>
           </div>
         </div>
         <button className="btn-primary" onClick={() => setShowCreate(true)}>
@@ -276,9 +281,9 @@ export default function UsersPage() {
       </div>
 
       {/* ── Search ── */}
-      <div className="users-search-wrap">
+      <div className="up-search-row">
         <input
-          className="users-search"
+          className="up-search"
           placeholder="Search by name or email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -286,13 +291,13 @@ export default function UsersPage() {
       </div>
 
       {/* ── Table ── */}
-      <div className="users-table-wrap">
+      <div className="up-card">
         {loading ? (
-          <div className="users-loading">Loading users…</div>
+          <div className="up-empty">Loading users…</div>
         ) : filtered.length === 0 ? (
-          <div className="users-loading">No users found.</div>
+          <div className="up-empty">No users found.</div>
         ) : (
-          <table className="users-table">
+          <table className="up-table">
             <thead>
               <tr>
                 <th>User</th>
@@ -304,54 +309,51 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <tr
-                  key={u.id}
-                  className={u.id === currentUser?.id ? "current-user-row" : ""}
-                >
+                <tr key={u.id}>
+                  {/* User cell — avatar + name inline */}
                   <td>
-                    <div className="user-cell">
+                    <div className="up-user-cell">
                       <Avatar name={u.name} size={34} />
-                      <span className="user-cell-name">
+                      <span className="up-user-name">
                         {u.name}
                         {u.id === currentUser?.id && (
-                          <span className="you-badge">You</span>
+                          <span className="up-you">You</span>
                         )}
                       </span>
                     </div>
                   </td>
-                  <td className="email-cell">{u.email}</td>
+
+                  <td className="up-email">{u.email}</td>
+
                   <td>
-                    <span className={`role-badge role-${u.role}`}>
+                    <span className={`up-role up-role-${u.role}`}>
                       {u.role}
                     </span>
                   </td>
-                  <td className="date-cell">
+
+                  <td className="up-date">
                     {new Date(u.created_at).toLocaleDateString([], {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
                     })}
                   </td>
+
                   <td>
-                    <div className="action-btns">
-                      {/* View Profile */}
+                    <div className="up-actions">
+                      {/* View profile */}
                       <button
-                        className="action-btn"
+                        className="up-btn"
                         title="View Profile"
                         onClick={() => setViewProfileId(u.id)}
                       >
-                        👤
+                        👤 Profile
                       </button>
 
-                      {/* Change Role — can't change your own */}
+                      {/* Change role */}
                       {u.id !== currentUser?.id && (
                         <button
-                          className={`action-btn role-btn ${u.role === "admin" ? "demote" : "promote"}`}
-                          title={
-                            u.role === "admin"
-                              ? "Demote to User"
-                              : "Promote to Admin"
-                          }
+                          className={`up-btn ${u.role === "admin" ? "up-btn-demote" : "up-btn-promote"}`}
                           onClick={() => handleChangeRole(u.id, u.role)}
                           disabled={actionLoading === u.id}
                         >
@@ -363,15 +365,14 @@ export default function UsersPage() {
                         </button>
                       )}
 
-                      {/* Delete — can't delete yourself */}
+                      {/* Delete */}
                       {u.id !== currentUser?.id && (
                         <button
-                          className="action-btn delete-btn"
-                          title="Delete User"
+                          className="up-btn up-btn-delete"
                           onClick={() => handleDelete(u.id)}
                           disabled={actionLoading === u.id}
                         >
-                          🗑
+                          🗑 Delete
                         </button>
                       )}
                     </div>
@@ -383,7 +384,6 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* ── Modals ── */}
       {showCreate && (
         <CreateUserModal
           onClose={() => setShowCreate(false)}

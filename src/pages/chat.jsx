@@ -503,13 +503,6 @@ export default function Chat() {
             </div>
 
             <div className="profile-divider" />
-
-            <button
-              className="profile-action-btn danger"
-              onClick={handleLogout}
-            >
-              Sign Out
-            </button>
           </div>
         )}
       </div>
