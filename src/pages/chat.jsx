@@ -363,6 +363,19 @@ export default function Chat() {
             );
           })}
         </div>
+
+        {/* u2500u2500 Manage Users u2014 admin only u2500u2500 */}
+        {user?.role === "admin" && (
+          <div className="sidebar-admin-section">
+            <button
+              className="manage-users-btn"
+              onClick={() => navigate("/users")}
+            >
+              <span className="manage-users-icon">👥</span>
+              Manage Users
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Col 2: Messages ── */}
