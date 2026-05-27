@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
+import EditProfilePanel from "../components/EditProfilePanel";
 
 window.Pusher = Pusher;
 const echo = new Echo({
@@ -22,7 +23,7 @@ const echo = new Echo({
   },
 });
 
-//  Avatar
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 40 }) {
   const initials =
     name
@@ -48,7 +49,7 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-//  New Chat Modal
+// ─── New Chat Modal ────────────────────────────────────────────────────────────
 function NewChatModal({ onClose, onStart, currentUserId }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -108,7 +109,7 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
   );
 }
 
-// Message Bubble
+// ─── Message Bubble ────────────────────────────────────────────────────────────
 function MessageBubble({ msg, isOwn, onReply }) {
   return (
     <div className={`msg-row ${isOwn ? "own" : "other"}`}>
@@ -142,13 +143,13 @@ function MessageBubble({ msg, isOwn, onReply }) {
   );
 }
 
-//  Main
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Chat() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [conversations, setConversations] = useState([]);
-  const [activeConv, setActiveConv] = useState(null); 
+  const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
@@ -156,7 +157,12 @@ export default function Chat() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const bottomRef = useRef(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -197,17 +203,16 @@ export default function Chat() {
     };
     loadMessages();
 
-    //Subscribe to the WebSocket channel
     echo.private(`conversation.${activeConv.id}`).listen("MessageSent", (e) => {
       setMessages((prev) => {
-        const alreadyExists = prev.some((m) => m.id === e.message.id); //duplicate check
+        const alreadyExists = prev.some((m) => m.id === e.message.id);
         return alreadyExists ? prev : [...prev, e.message];
       });
       refreshConversations();
     });
 
     return () => {
-      echo.leave(`conversation.${activeConv.id}`); //Leaving the old channel before joining the new one
+      echo.leave(`conversation.${activeConv.id}`);
     };
   }, [activeConv, refreshConversations]);
 
@@ -230,8 +235,6 @@ export default function Chat() {
         `/api/conversations/${activeConv.id}/messages`,
         payload,
       );
-
-      // 1. Optimistic update — add to UI immediately
       setMessages((prev) => [...prev, data]);
       setText("");
       setReplyTo(null);
@@ -261,6 +264,26 @@ export default function Chat() {
       setShowProfile(false);
     } catch (err) {
       console.log(err);
+    }
+  };
+
+  const handleSearch = async (q) => {
+    setSearchQuery(q);
+    if (!q.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const { data } = await api.get(
+        `/api/conversations/${activeConv.id}/messages/search`,
+        { params: { q } },
+      );
+      setSearchResults(data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -303,11 +326,15 @@ export default function Chat() {
           </div>
         </div>
 
-        <div className="sidebar-me">
+        <button
+          className="sidebar-me sidebar-me-btn"
+          onClick={() => setShowEditProfile((v) => !v)}
+          title="Edit profile"
+        >
           <Avatar name={user?.name} size={34} />
           <span className="sidebar-me-name">{user?.name}</span>
           <span className="online-dot" />
-        </div>
+        </button>
 
         <div className="sidebar-search-wrap">
           <input
@@ -403,20 +430,107 @@ export default function Chat() {
                 </div>
               </button>
               <div className="msg-header-actions">
-                <button className="icon-btn-light">🔍</button>
+                <button
+                  className="icon-btn-light"
+                  onClick={() => {
+                    setShowSearch(!showSearch);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
+                >
+                  🔍
+                </button>
                 <button className="icon-btn-light">⋯</button>
               </div>
             </div>
 
+            {showSearch && (
+              <div className="search-panel">
+                <div className="search-input-wrap">
+                  <input
+                    className="search-input"
+                    placeholder="Search messages…"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    autoFocus
+                  />
+                  {searching && <span className="search-spinner">⏳</span>}
+                </div>
+
+                {searchQuery && (
+                  <div className="search-results">
+                    {searchResults.length === 0 && !searching && (
+                      <p className="search-empty">
+                        No messages found for "{searchQuery}"
+                      </p>
+                    )}
+                    {searchResults.map((msg) => (
+                      <button
+                        key={msg.id}
+                        className="search-result-item"
+                        onClick={() => {
+                          // Scroll to message and highlight it
+                          const el = document.getElementById(`msg-${msg.id}`);
+                          if (el) {
+                            el.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                            el.classList.add("highlight");
+                            setTimeout(
+                              () => el.classList.remove("highlight"),
+                              2000,
+                            );
+                          }
+                          setShowSearch(false);
+                          setSearchQuery("");
+                          setSearchResults([]);
+                        }}
+                      >
+                        <div className="search-result-sender">
+                          {msg.sender?.name}
+                        </div>
+                        <div className="search-result-body">
+                          {msg.body
+                            .replace(
+                              new RegExp(`(${searchQuery})`, "gi"),
+                              "**$1**",
+                            )
+                            .split("**")
+                            .map((part, i) =>
+                              part.toLowerCase() ===
+                              searchQuery.toLowerCase() ? (
+                                <mark key={i}>{part}</mark>
+                              ) : (
+                                part
+                              ),
+                            )}
+                        </div>
+                        <div className="search-result-time">
+                          {new Date(msg.created_at).toLocaleString([], {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="messages-scroll">
               {loadingMsgs && <p className="msgs-loading">Loading…</p>}
               {messages.map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  isOwn={msg.sender_id === user?.id}
-                  onReply={setReplyTo}
-                />
+                <div id={`msg-${msg.id}`} key={msg.id}>
+                  <MessageBubble
+                    msg={msg}
+                    isOwn={msg.sender_id === user?.id}
+                    onReply={setReplyTo}
+                  />
+                </div>
               ))}
               <div ref={bottomRef} />
             </div>
@@ -512,6 +626,11 @@ export default function Chat() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Edit Profile Panel ── */}
+      {showEditProfile && (
+        <EditProfilePanel onClose={() => setShowEditProfile(false)} />
       )}
 
       {showNewChat && (
