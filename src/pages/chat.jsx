@@ -5,10 +5,7 @@ import { useAuth } from "../context/useAuth";
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
-//  Echo singleton (module level is fine, just the instance)
 window.Pusher = Pusher;
-console.log(import.meta.env);
-console.log(import.meta.env.VITE_REVERB_APP_KEY);
 const echo = new Echo({
   broadcaster: "reverb",
   key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -25,7 +22,7 @@ const echo = new Echo({
   },
 });
 
-//  Avatar
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 40 }) {
   const initials =
     name
@@ -51,7 +48,7 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-//  New Chat Modal
+// ─── New Chat Modal ────────────────────────────────────────────────────────────
 function NewChatModal({ onClose, onStart, currentUserId }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -111,7 +108,7 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
   );
 }
 
-//  Message Bubble
+// ─── Message Bubble ────────────────────────────────────────────────────────────
 function MessageBubble({ msg, isOwn, onReply }) {
   return (
     <div className={`msg-row ${isOwn ? "own" : "other"}`}>
@@ -145,7 +142,7 @@ function MessageBubble({ msg, isOwn, onReply }) {
   );
 }
 
-//  Main
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Chat() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -158,9 +155,9 @@ export default function Chat() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const bottomRef = useRef(null);
 
-  //  Load conversations on mount
   useEffect(() => {
     const loadConversations = async () => {
       try {
@@ -173,7 +170,6 @@ export default function Chat() {
     loadConversations();
   }, []);
 
-  //  refreshConversations — declared before the useEffects that call it
   const refreshConversations = useCallback(async () => {
     try {
       const { data } = await api.get("/api/conversations");
@@ -183,11 +179,9 @@ export default function Chat() {
     }
   }, []);
 
-  //  Load messages + subscribe to Reverb when activeConv changes
   useEffect(() => {
     if (!activeConv) return;
 
-    // Load existing messages via REST
     const loadMessages = async () => {
       setLoadingMsgs(true);
       try {
@@ -203,24 +197,19 @@ export default function Chat() {
     };
     loadMessages();
 
-    // Subscribe to the private channel for this conversation
     echo.private(`conversation.${activeConv.id}`).listen("MessageSent", (e) => {
-      // Only add incoming messages (not our own — we already add those optimistically)
       setMessages((prev) => {
         const alreadyExists = prev.some((m) => m.id === e.message.id);
         return alreadyExists ? prev : [...prev, e.message];
       });
-      // Refresh sidebar preview
       refreshConversations();
     });
 
-    // Cleanup: leave channel when switching conversations or unmounting
     return () => {
       echo.leave(`conversation.${activeConv.id}`);
     };
   }, [activeConv, refreshConversations]);
 
-  //  Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -240,7 +229,6 @@ export default function Chat() {
         `/api/conversations/${activeConv.id}/messages`,
         payload,
       );
-      // Optimistically add our own message immediately
       setMessages((prev) => [...prev, data]);
       setText("");
       setReplyTo(null);
@@ -267,6 +255,7 @@ export default function Chat() {
       setShowNewChat(false);
       await refreshConversations();
       setActiveConv(data);
+      setShowProfile(false);
     } catch (err) {
       console.log(err);
     }
@@ -339,7 +328,10 @@ export default function Chat() {
               <button
                 key={conv.id}
                 className={`conv-item ${isActive ? "active" : ""}`}
-                onClick={() => setActiveConv(conv)}
+                onClick={() => {
+                  setActiveConv(conv);
+                  setShowProfile(false);
+                }}
               >
                 <div className="conv-avatar-wrap">
                   <Avatar name={o?.name} size={44} />
@@ -364,7 +356,6 @@ export default function Chat() {
           })}
         </div>
 
-        {/* u2500u2500 Manage Users u2014 admin only u2500u2500 */}
         {user?.role === "admin" && (
           <div className="sidebar-admin-section">
             <button
@@ -393,14 +384,21 @@ export default function Chat() {
           </div>
         ) : (
           <>
+            {/* Click avatar/name to toggle profile panel */}
             <div className="msg-header">
-              <Avatar name={other?.name} size={38} />
-              <div className="msg-header-info">
-                <div className="msg-header-name">{other?.name}</div>
-                <div className="msg-header-status">
-                  <span className="online-dot" /> Online
+              <button
+                className="msg-header-profile-btn"
+                onClick={() => setShowProfile((v) => !v)}
+                title="View profile"
+              >
+                <Avatar name={other?.name} size={38} />
+                <div className="msg-header-info">
+                  <div className="msg-header-name">{other?.name}</div>
+                  <div className="msg-header-status">
+                    <span className="online-dot" /> Online
+                  </div>
                 </div>
-              </div>
+              </button>
               <div className="msg-header-actions">
                 <button className="icon-btn-light">🔍</button>
                 <button className="icon-btn-light">⋯</button>
@@ -458,12 +456,17 @@ export default function Chat() {
         )}
       </div>
 
-      {/* ── Col 3: Profile Panel ── */}
-      <div className="col-profile">
-        {!activeConv ? (
-          <div className="profile-empty">Select a chat to see details</div>
-        ) : (
+      {/* ── Col 3: Profile Panel — only renders when showProfile = true ── */}
+      {showProfile && activeConv && (
+        <div className="col-profile">
           <div className="profile-content">
+            <button
+              className="profile-close-btn"
+              onClick={() => setShowProfile(false)}
+              title="Close"
+            >
+              ✕
+            </button>
             <div className="profile-avatar-wrap">
               <Avatar name={other?.name} size={80} />
             </div>
@@ -496,16 +499,17 @@ export default function Chat() {
                 {activeConv?.last_message_at
                   ? new Date(activeConv.last_message_at).toLocaleDateString(
                       [],
-                      { day: "numeric", month: "short" },
+                      {
+                        day: "numeric",
+                        month: "short",
+                      },
                     )
                   : "Never"}
               </span>
             </div>
-
-            <div className="profile-divider" />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {showNewChat && (
         <NewChatModal
