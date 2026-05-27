@@ -22,7 +22,7 @@ const echo = new Echo({
   },
 });
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+//  Avatar
 function Avatar({ name, size = 40 }) {
   const initials =
     name
@@ -48,7 +48,7 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-// ─── New Chat Modal ────────────────────────────────────────────────────────────
+//  New Chat Modal
 function NewChatModal({ onClose, onStart, currentUserId }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -108,7 +108,7 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
   );
 }
 
-// ─── Message Bubble ────────────────────────────────────────────────────────────
+// Message Bubble
 function MessageBubble({ msg, isOwn, onReply }) {
   return (
     <div className={`msg-row ${isOwn ? "own" : "other"}`}>
@@ -142,13 +142,13 @@ function MessageBubble({ msg, isOwn, onReply }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main
 export default function Chat() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [conversations, setConversations] = useState([]);
-  const [activeConv, setActiveConv] = useState(null);
+  const [activeConv, setActiveConv] = useState(null); 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
@@ -197,16 +197,17 @@ export default function Chat() {
     };
     loadMessages();
 
+    //Subscribe to the WebSocket channel
     echo.private(`conversation.${activeConv.id}`).listen("MessageSent", (e) => {
       setMessages((prev) => {
-        const alreadyExists = prev.some((m) => m.id === e.message.id);
+        const alreadyExists = prev.some((m) => m.id === e.message.id); //duplicate check
         return alreadyExists ? prev : [...prev, e.message];
       });
       refreshConversations();
     });
 
     return () => {
-      echo.leave(`conversation.${activeConv.id}`);
+      echo.leave(`conversation.${activeConv.id}`); //Leaving the old channel before joining the new one
     };
   }, [activeConv, refreshConversations]);
 
@@ -229,6 +230,8 @@ export default function Chat() {
         `/api/conversations/${activeConv.id}/messages`,
         payload,
       );
+
+      // 1. Optimistic update — add to UI immediately
       setMessages((prev) => [...prev, data]);
       setText("");
       setReplyTo(null);
