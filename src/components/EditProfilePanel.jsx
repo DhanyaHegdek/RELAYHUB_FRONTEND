@@ -34,7 +34,7 @@ function Avatar({ name, size = 64 }) {
 }
 
 export default function EditProfilePanel({ onClose }) {
-  const { user, login } = useAuth();
+  const { login } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
