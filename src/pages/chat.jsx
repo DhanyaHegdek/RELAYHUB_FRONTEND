@@ -28,11 +28,24 @@ const echo = new Echo({
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, size = 40 }) {
   const initials =
-    name?.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+    name
+      ?.split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
   const hue =
     [...(name || "")].reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
   return (
-    <div className="avatar" style={{ width: size, height: size, fontSize: size * 0.37, background: `hsl(${hue},50%,55%)` }}>
+    <div
+      className="avatar"
+      style={{
+        width: size,
+        height: size,
+        fontSize: size * 0.37,
+        background: `hsl(${hue},50%,55%)`,
+      }}
+    >
       {initials}
     </div>
   );
@@ -45,7 +58,8 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get("/api/users")
+    api
+      .get("/api/users")
       .then(({ data }) => setUsers(data.filter((u) => u.id !== currentUserId)))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -62,15 +76,28 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>New Conversation</h3>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose}>
+            ✕
+          </button>
         </div>
-        <input className="modal-search" placeholder="Search users…" value={search}
-          onChange={(e) => setSearch(e.target.value)} autoFocus />
+        <input
+          className="modal-search"
+          placeholder="Search users…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+        />
         <div className="modal-list">
           {loading && <p className="modal-empty">Loading…</p>}
-          {!loading && filtered.length === 0 && <p className="modal-empty">No users found</p>}
+          {!loading && filtered.length === 0 && (
+            <p className="modal-empty">No users found</p>
+          )}
           {filtered.map((u) => (
-            <button key={u.id} className="modal-user" onClick={() => onStart(u)}>
+            <button
+              key={u.id}
+              className="modal-user"
+              onClick={() => onStart(u)}
+            >
               <Avatar name={u.name} size={38} />
               <div>
                 <div className="modal-user-name">{u.name}</div>
@@ -84,52 +111,102 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
   );
 }
 
-// ─── Message Bubble ────────────────────────────────────────────────────────────
 function MessageBubble({ msg, isOwn, onReply }) {
+  const isImage = msg.file_type ? msg.file_type.indexOf("image/") === 0 : false;
+  const hasFile = msg.file_path ? true : false;
+  const fileUrl = hasFile
+    ? "http://relayhub.test/storage/" + msg.file_path
+    : null;
+
+  const formatSize = (bytes) => {
+    if (!bytes) return "";
+    if (bytes < 1048576) return Math.round(bytes / 1024) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  };
+
   return (
-    <div className={`msg-row ${isOwn ? "own" : "other"}`}>
-      {!isOwn && <Avatar name={msg.sender?.name} size={30} />}
+    <div className={"msg-row " + (isOwn ? "own" : "other")}>
+      {!isOwn && <Avatar name={msg.sender ? msg.sender.name : ""} size={30} />}
       <div className="msg-wrap">
         {msg.reply_to && (
           <div className="msg-reply-quote">
-            <span className="msg-reply-name">{msg.reply_to.sender?.name}</span>
+            <span className="msg-reply-name">
+              {msg.reply_to.sender ? msg.reply_to.sender.name : ""}
+            </span>
             <span className="msg-reply-body">{msg.reply_to.body}</span>
           </div>
         )}
         <div className="bubble">
-          {msg.body}
-          <button className="msg-reply-btn" title="Reply" onClick={() => onReply(msg)}>↩</button>
+          {hasFile && isImage && (
+            <a href={fileUrl} target="_blank" rel="noreferrer">
+              <img src={fileUrl} alt={msg.file_name} className="msg-image" />
+            </a>
+          )}
+
+          {hasFile && !isImage && (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="msg-file"
+            >
+              <span className="msg-file-icon">📄</span>
+              <div className="msg-file-info">
+                <div className="msg-file-name">{msg.file_name}</div>
+                <div className="msg-file-size">{formatSize(msg.file_size)}</div>
+              </div>
+              <span className="msg-file-download">↓</span>
+            </a>
+          )}
+
+          {msg.body && msg.body}
+
+          <button
+            className="msg-reply-btn"
+            title="Reply"
+            onClick={() => onReply(msg)}
+          >
+            ↩
+          </button>
         </div>
         <div className="msg-time">
-          {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          {new Date(msg.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </div>
       </div>
-      {isOwn && <Avatar name={msg.sender?.name} size={30} />}
+      {isOwn && <Avatar name={msg.sender ? msg.sender.name : ""} size={30} />}
     </div>
   );
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Chat() {
+  const [fileUploading, setFileUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toasts, unread, notify, dismiss, clearUnread } = useNotifications();
 
-  const [conversations, setConversations]     = useState([]);
-  const [activeConv, setActiveConv]           = useState(null);
-  const [messages, setMessages]               = useState([]);
-  const [text, setText]                       = useState("");
-  const [replyTo, setReplyTo]                 = useState(null);
-  const [showNewChat, setShowNewChat]         = useState(false);
-  const [loadingMsgs, setLoadingMsgs]         = useState(false);
-  const [sending, setSending]                 = useState(false);
-  const [showProfile, setShowProfile]         = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [activeConv, setActiveConv] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState(null);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const bottomRef  = useRef(null);
+  const bottomRef = useRef(null);
   const activeConvRef = useRef(null); // ref to access activeConv inside echo callback
 
   // keep ref in sync with state
-  useEffect(() => { activeConvRef.current = activeConv; }, [activeConv]);
+  useEffect(() => {
+    activeConvRef.current = activeConv;
+  }, [activeConv]);
 
   // ── Load conversations on mount ─────────────────────────────────────────────
   useEffect(() => {
@@ -137,7 +214,9 @@ export default function Chat() {
       try {
         const { data } = await api.get("/api/conversations");
         setConversations(data);
-      } catch (err) { console.log(err); }
+      } catch (err) {
+        console.log(err);
+      }
     };
     load();
   }, []);
@@ -146,7 +225,9 @@ export default function Chat() {
     try {
       const { data } = await api.get("/api/conversations");
       setConversations(data);
-    } catch (err) { console.log(err); }
+    } catch (err) {
+      console.log(err);
+    }
   }, []);
 
   // ── Subscribe to ALL conversations for notifications ────────────────────────
@@ -204,7 +285,9 @@ export default function Chat() {
     const load = async () => {
       setLoadingMsgs(true);
       try {
-        const { data } = await api.get(`/api/conversations/${activeConv.id}/messages`);
+        const { data } = await api.get(
+          `/api/conversations/${activeConv.id}/messages`,
+        );
         setMessages(data);
       } catch (err) {
         console.log(err);
@@ -231,40 +314,88 @@ export default function Chat() {
     try {
       const payload = { body: text.trim() };
       if (replyTo) payload.reply_to_id = replyTo.id;
-      const { data } = await api.post(`/api/conversations/${activeConv.id}/messages`, payload);
+      const { data } = await api.post(
+        `/api/conversations/${activeConv.id}/messages`,
+        payload,
+      );
       setMessages((prev) => [...prev, data]);
       setText("");
       setReplyTo(null);
       await refreshConversations();
-    } catch (err) { console.log(err); }
-    finally { setSending(false); }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleStartConversation = async (targetUser) => {
     try {
-      const { data } = await api.post("/api/conversations", { user_id: targetUser.id });
+      const { data } = await api.post("/api/conversations", {
+        user_id: targetUser.id,
+      });
       setShowNewChat(false);
       await refreshConversations();
       setActiveConv(data);
       setShowProfile(false);
-    } catch (err) { console.log(err); }
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const handleLogout = async () => {
-    try { await api.post("/api/logout"); } catch (err) { console.log(err); }
+    try {
+      await api.post("/api/logout");
+    } catch (err) {
+      console.log(err);
+    }
     logout();
     navigate("/login");
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !activeConv) return;
+
+    // 10MB check on client side too
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setFileUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const { data } = await api.post(
+        `/api/conversations/${activeConv.id}/upload`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+
+      setMessages((prev) => [...prev, data]);
+      await refreshConversations();
+    } catch (err) {
+      console.log(err);
+      alert("Upload failed. Please try again.");
+    } finally {
+      setFileUploading(false);
+      e.target.value = ""; // reset input
+    }
   };
 
   const other = otherUser(activeConv);
 
   return (
     <div className="chat-layout">
-
       {/* ── Toast notifications ── */}
       <Toast toasts={toasts} onDismiss={dismiss} />
 
@@ -276,8 +407,20 @@ export default function Chat() {
             <span className="brand-name">Relayhub</span>
           </div>
           <div className="sidebar-actions">
-            <button className="icon-btn" title="New chat" onClick={() => setShowNewChat(true)}>✎</button>
-            <button className="icon-btn danger" title="Logout" onClick={handleLogout}>⏻</button>
+            <button
+              className="icon-btn"
+              title="New chat"
+              onClick={() => setShowNewChat(true)}
+            >
+              ✎
+            </button>
+            <button
+              className="icon-btn danger"
+              title="Logout"
+              onClick={handleLogout}
+            >
+              ⏻
+            </button>
           </div>
         </div>
 
@@ -292,12 +435,19 @@ export default function Chat() {
         </button>
 
         <div className="sidebar-search-wrap">
-          <input className="sidebar-search" placeholder="Search conversations…" />
+          <input
+            className="sidebar-search"
+            placeholder="Search conversations…"
+          />
         </div>
 
         <div className="conv-scroll">
           {conversations.length === 0 && (
-            <p className="conv-empty">No conversations yet.<br />Start one with ✎</p>
+            <p className="conv-empty">
+              No conversations yet.
+              <br />
+              Start one with ✎
+            </p>
           )}
           {conversations.map((conv) => {
             const o = otherUser(conv);
@@ -320,17 +470,24 @@ export default function Chat() {
                 <div className="conv-info">
                   <div className="conv-name">{o?.name}</div>
                   <div className="conv-preview">
-                    {conv.latest_message?.body || "No messages yet"}
+                    {conv.latest_message?.file_name
+                      ? "📎 " + conv.latest_message.file_name
+                      : conv.latest_message?.body || "No messages yet"}
                   </div>
                 </div>
                 <div className="conv-right">
                   {conv.latest_message && (
                     <div className="conv-time">
-                      {new Date(conv.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(conv.last_message_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   )}
                   {unreadCount > 0 && (
-                    <div className="unread-badge">{unreadCount > 99 ? "99+" : unreadCount}</div>
+                    <div className="unread-badge">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </div>
                   )}
                 </div>
               </button>
@@ -340,7 +497,10 @@ export default function Chat() {
 
         {user?.role === "admin" && (
           <div className="sidebar-admin-section">
-            <button className="manage-users-btn" onClick={() => navigate("/users")}>
+            <button
+              className="manage-users-btn"
+              onClick={() => navigate("/users")}
+            >
               <span className="manage-users-icon">👥</span>
               Manage Users
             </button>
@@ -359,7 +519,12 @@ export default function Chat() {
           <div className="no-conv">
             <div className="no-conv-icon">⬡</div>
             <p>Pick a conversation or start a new one</p>
-            <button className="btn-primary" onClick={() => setShowNewChat(true)}>New Conversation</button>
+            <button
+              className="btn-primary"
+              onClick={() => setShowNewChat(true)}
+            >
+              New Conversation
+            </button>
           </div>
         ) : (
           <>
@@ -372,7 +537,9 @@ export default function Chat() {
                 <Avatar name={other?.name} size={38} />
                 <div className="msg-header-info">
                   <div className="msg-header-name">{other?.name}</div>
-                  <div className="msg-header-status"><span className="online-dot" /> Online</div>
+                  <div className="msg-header-status">
+                    <span className="online-dot" /> Online
+                  </div>
                 </div>
               </button>
               <div className="msg-header-actions">
@@ -397,14 +564,44 @@ export default function Chat() {
             {replyTo && (
               <div className="reply-banner">
                 <div>
-                  <div className="reply-banner-label">↩ Replying to {replyTo.sender?.name}</div>
-                  <div className="reply-banner-preview">{replyTo.body}</div>
+                  <div className="reply-banner-label">
+                    ↩ Replying to {replyTo.sender?.name}
+                  </div>
+                  <div className="reply-banner-preview">
+                    {replyTo.file_name
+                      ? "📎 " + replyTo.file_name
+                      : replyTo.body}
+                  </div>
                 </div>
-                <button className="reply-cancel" onClick={() => setReplyTo(null)}>✕</button>
+                <button
+                  className="reply-cancel"
+                  onClick={() => setReplyTo(null)}
+                >
+                  ✕
+                </button>
               </div>
             )}
 
             <div className="input-row">
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                style={{ display: "none" }}
+                accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+              />
+
+              {/* File attach button */}
+              <button
+                className="attach-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={fileUploading || !activeConv}
+                title="Attach file"
+              >
+                {fileUploading ? "⏳" : "📎"}
+              </button>
+
               <textarea
                 className="msg-input"
                 placeholder="Type your message here…"
@@ -413,7 +610,11 @@ export default function Chat() {
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
-              <button className="send-btn" onClick={handleSend} disabled={!text.trim() || sending}>
+              <button
+                className="send-btn"
+                onClick={handleSend}
+                disabled={!text.trim() || sending}
+              >
                 {sending ? "…" : "↑"}
               </button>
             </div>
@@ -425,8 +626,15 @@ export default function Chat() {
       {showProfile && activeConv && (
         <div className="col-profile">
           <div className="profile-content">
-            <button className="profile-close-btn" onClick={() => setShowProfile(false)}>✕</button>
-            <div className="profile-avatar-wrap"><Avatar name={other?.name} size={80} /></div>
+            <button
+              className="profile-close-btn"
+              onClick={() => setShowProfile(false)}
+            >
+              ✕
+            </button>
+            <div className="profile-avatar-wrap">
+              <Avatar name={other?.name} size={80} />
+            </div>
             <div className="profile-name">{other?.name}</div>
             <div className="profile-email">{other?.email}</div>
             <div className="profile-badge">Active</div>
@@ -440,7 +648,11 @@ export default function Chat() {
               <span className="profile-stat-label">Started</span>
               <span className="profile-stat-val">
                 {activeConv?.created_at
-                  ? new Date(activeConv.created_at).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" })
+                  ? new Date(activeConv.created_at).toLocaleDateString([], {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
                   : "—"}
               </span>
             </div>
@@ -448,7 +660,10 @@ export default function Chat() {
               <span className="profile-stat-label">Last message</span>
               <span className="profile-stat-val">
                 {activeConv?.last_message_at
-                  ? new Date(activeConv.last_message_at).toLocaleDateString([], { day: "numeric", month: "short" })
+                  ? new Date(activeConv.last_message_at).toLocaleDateString(
+                      [],
+                      { day: "numeric", month: "short" },
+                    )
                   : "Never"}
               </span>
             </div>
