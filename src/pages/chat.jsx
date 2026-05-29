@@ -181,6 +181,176 @@ function MessageBubble({ msg, isOwn, onReply }) {
   );
 }
 
+function ProfileTabs({ activeConv, messages }) {
+  const [tab, setTab] = useState("info");
+  const [files, setFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
+  useEffect(() => {
+    if (tab !== "media" || !activeConv) return;
+
+    let cancelled = false;
+
+    const fetchFiles = async () => {
+      if (cancelled) return;
+      setLoadingFiles(true); // still technically in effect, but now inside async fn
+      try {
+        const res = await api.get(`/api/conversations/${activeConv.id}/files`);
+        if (!cancelled) setFiles(res.data);
+      } catch {
+        // handle error
+      } finally {
+        if (!cancelled) setLoadingFiles(false);
+      }
+    };
+
+    fetchFiles();
+
+    return () => {
+      cancelled = true;
+    }; // cleanup to avoid state updates on unmounted component
+  }, [tab, activeConv]);
+
+  const images = files.filter(function (f) {
+    return f.file_type && f.file_type.indexOf("image/") === 0;
+  });
+  const docs = files.filter(function (f) {
+    return !f.file_type || f.file_type.indexOf("image/") !== 0;
+  });
+
+  function formatSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1048576) return Math.round(bytes / 1024) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  }
+
+  return (
+    <div style={{ width: "100%" }}>
+      <div className="profile-tabs">
+        <button
+          className={tab === "info" ? "profile-tab active" : "profile-tab"}
+          onClick={function () {
+            setTab("info");
+          }}
+        >
+          Info
+        </button>
+        <button
+          className={tab === "media" ? "profile-tab active" : "profile-tab"}
+          onClick={function () {
+            setTab("media");
+          }}
+        >
+          Media
+        </button>
+      </div>
+
+      {tab === "info" && (
+        <div className="profile-tab-content">
+          <div className="profile-section-title">Conversation Info</div>
+          <div className="profile-stat">
+            <span className="profile-stat-label">Messages</span>
+            <span className="profile-stat-val">{messages.length}</span>
+          </div>
+          <div className="profile-stat">
+            <span className="profile-stat-label">Started</span>
+            <span className="profile-stat-val">
+              {activeConv && activeConv.created_at
+                ? new Date(activeConv.created_at).toLocaleDateString([], {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "—"}
+            </span>
+          </div>
+          <div className="profile-stat">
+            <span className="profile-stat-label">Last message</span>
+            <span className="profile-stat-val">
+              {activeConv && activeConv.last_message_at
+                ? new Date(activeConv.last_message_at).toLocaleDateString([], {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : "Never"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {tab === "media" && (
+        <div className="profile-tab-content">
+          {loadingFiles && <p className="media-empty">Loading...</p>}
+
+          {!loadingFiles && files.length === 0 && (
+            <p className="media-empty">No files shared yet</p>
+          )}
+
+          {images.length > 0 && (
+            <div>
+              <div className="profile-section-title">
+                Photos ({images.length})
+              </div>
+              <div className="media-grid">
+                {images.map(function (f) {
+                  return (
+                    <a
+                      key={f.id}
+                      href={"http://relayhub.test/storage/" + f.file_path}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="media-thumb"
+                    >
+                      <img
+                        src={"http://relayhub.test/storage/" + f.file_path}
+                        alt={f.file_name}
+                      />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {docs.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div className="profile-section-title">Files ({docs.length})</div>
+              <div className="media-files-list">
+                {docs.map(function (f) {
+                  return (
+                    <a
+                      key={f.id}
+                      href={"http://relayhub.test/storage/" + f.file_path}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="media-file-row"
+                    >
+                      <span className="media-file-icon">Doc</span>
+                      <div className="media-file-info">
+                        <div className="media-file-name">{f.file_name}</div>
+                        <div className="media-file-meta">
+                          {f.sender ? f.sender.name : ""} &bull;{" "}
+                          {new Date(f.created_at).toLocaleDateString([], {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </div>
+                      </div>
+                      <span className="media-file-size">
+                        {formatSize(f.file_size)}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Chat() {
   const [fileUploading, setFileUploading] = useState(false);
@@ -639,34 +809,8 @@ export default function Chat() {
             <div className="profile-email">{other?.email}</div>
             <div className="profile-badge">Active</div>
             <div className="profile-divider" />
-            <div className="profile-section-title">Conversation Info</div>
-            <div className="profile-stat">
-              <span className="profile-stat-label">Messages</span>
-              <span className="profile-stat-val">{messages.length}</span>
-            </div>
-            <div className="profile-stat">
-              <span className="profile-stat-label">Started</span>
-              <span className="profile-stat-val">
-                {activeConv?.created_at
-                  ? new Date(activeConv.created_at).toLocaleDateString([], {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })
-                  : "—"}
-              </span>
-            </div>
-            <div className="profile-stat">
-              <span className="profile-stat-label">Last message</span>
-              <span className="profile-stat-val">
-                {activeConv?.last_message_at
-                  ? new Date(activeConv.last_message_at).toLocaleDateString(
-                      [],
-                      { day: "numeric", month: "short" },
-                    )
-                  : "Never"}
-              </span>
-            </div>
+
+            <ProfileTabs activeConv={activeConv} messages={messages} />
           </div>
         </div>
       )}
