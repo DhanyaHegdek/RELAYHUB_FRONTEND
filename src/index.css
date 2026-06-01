@@ -6301,3 +6301,46 @@ textarea {
   text-align: center;
   padding: 24px 0;
 }
+
+/* Storage bar */
+.storage-bar-wrap {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: auto;
+}
+
+.storage-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 6px;
+}
+
+.storage-bar-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #3b82f6;
+  transition: width 0.3s ease;
+}
+
+.storage-bar-fill.warning {
+  background: #f59e0b;
+}
+.storage-bar-fill.danger {
+  background: #ef4444;
+}
+
+.storage-bar-pct {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 4px;
+  text-align: right;
+}

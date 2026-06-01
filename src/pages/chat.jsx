@@ -25,7 +25,7 @@ const echo = new Echo({
   },
 });
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// ─── Avatar
 function Avatar({ name, size = 40 }) {
   const initials =
     name
@@ -51,7 +51,7 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-// ─── New Chat Modal ────────────────────────────────────────────────────────────
+// ─── New Chat Modal
 function NewChatModal({ onClose, onStart, currentUserId }) {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -351,7 +351,7 @@ function ProfileTabs({ activeConv, messages }) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main
 export default function Chat() {
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -383,7 +383,7 @@ export default function Chat() {
     activeConvRef.current = activeConv;
   }, [activeConv]);
 
-  // ── Load conversations on mount ─────────────────────────────────────────────
+  // ── Load conversations on mount
   useEffect(() => {
     const load = async () => {
       try {
@@ -405,7 +405,7 @@ export default function Chat() {
     }
   }, []);
 
-  // ── Subscribe to ALL conversations for notifications ────────────────────────
+  // ── Subscribe to ALL conversations for notifications
   useEffect(() => {
     if (conversations.length === 0) return;
 
@@ -449,12 +449,12 @@ export default function Chat() {
     };
   }, [conversations, notify, refreshConversations, user?.id]);
 
-  // ── Clear unread separately to avoid setState in effect body ───────────────
+  // ── Clear unread separately to avoid setState in effect body
   useEffect(() => {
     if (activeConv) clearUnread(activeConv.id);
   }, [activeConv, clearUnread]);
 
-  // ── Load messages when switching conversation ───────────────────────────────
+  // ── Load messages when switching conversation
   useEffect(() => {
     if (!activeConv) return;
     const load = async () => {
@@ -473,7 +473,7 @@ export default function Chat() {
     load();
   }, [activeConv]);
 
-  // ── Auto-scroll ─────────────────────────────────────────────────────────────
+  // ── Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
