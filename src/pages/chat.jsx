@@ -356,6 +356,11 @@ export default function Chat() {
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef(null);
 
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toasts, unread, notify, dismiss, clearUnread } = useNotifications();
@@ -476,6 +481,26 @@ export default function Chat() {
   const otherUser = (conv) => {
     if (!conv) return null;
     return conv.user_one?.id === user?.id ? conv.user_two : conv.user_one;
+  };
+
+  const handleSearch = async (q) => {
+    setSearchQuery(q);
+    if (!q.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const { data } = await api.get(
+        `/api/conversations/${activeConv.id}/messages/search`,
+        { params: { q } },
+      );
+      setSearchResults(data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setSearching(false);
+    }
   };
 
   const handleSend = async () => {
@@ -713,10 +738,96 @@ export default function Chat() {
                 </div>
               </button>
               <div className="msg-header-actions">
-                <button className="icon-btn-light">🔍</button>
+                <button
+                  className="icon-btn-light"
+                  onClick={() => {
+                    setShowSearch(!showSearch);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                  }}
+                >
+                  🔍
+                </button>
                 <button className="icon-btn-light">⋯</button>
               </div>
             </div>
+
+            {showSearch && (
+              <div className="search-panel">
+                <div className="search-input-wrap">
+                  <input
+                    className="search-input"
+                    placeholder="Search messages…"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    autoFocus
+                  />
+                  {searching && <span className="search-spinner">⏳</span>}
+                </div>
+
+                {searchQuery && (
+                  <div className="search-results">
+                    {searchResults.length === 0 && !searching && (
+                      <p className="search-empty">
+                        No messages found for "{searchQuery}"
+                      </p>
+                    )}
+                    {searchResults.map((msg) => (
+                      <button
+                        key={msg.id}
+                        className="search-result-item"
+                        onClick={() => {
+                          // Scroll to message and highlight it
+                          const el = document.getElementById(`msg-${msg.id}`);
+                          if (el) {
+                            el.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                            el.classList.add("highlight");
+                            setTimeout(
+                              () => el.classList.remove("highlight"),
+                              2000,
+                            );
+                          }
+                          setShowSearch(false);
+                          setSearchQuery("");
+                          setSearchResults([]);
+                        }}
+                      >
+                        <div className="search-result-sender">
+                          {msg.sender?.name}
+                        </div>
+                        <div className="search-result-body">
+                          {msg.body
+                            .replace(
+                              new RegExp(`(${searchQuery})`, "gi"),
+                              "**$1**",
+                            )
+                            .split("**")
+                            .map((part, i) =>
+                              part.toLowerCase() ===
+                              searchQuery.toLowerCase() ? (
+                                <mark key={i}>{part}</mark>
+                              ) : (
+                                part
+                              ),
+                            )}
+                        </div>
+                        <div className="search-result-time">
+                          {new Date(msg.created_at).toLocaleString([], {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="messages-scroll">
               {loadingMsgs && <p className="msgs-loading">Loading…</p>}
