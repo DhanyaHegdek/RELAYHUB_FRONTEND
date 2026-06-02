@@ -711,7 +711,8 @@ export default function Chat() {
           })}
         </div>
 
-        {user?.email === "admin123@gmail.com" && (
+        {/* {user?.email === "admin123@gmail.com" && ( */}
+        {user?.role === "admin" && (
           <div className="sidebar-admin-section">
             <button
               className="manage-users-btn"
