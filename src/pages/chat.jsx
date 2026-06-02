@@ -355,6 +355,7 @@ function ProfileTabs({ activeConv, messages }) {
 export default function Chat() {
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const [storageInfo, setStorageInfo] = useState(null);
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -383,7 +384,7 @@ export default function Chat() {
     activeConvRef.current = activeConv;
   }, [activeConv]);
 
-  // ── Load conversations on mount
+  // ── Load conversations on mount ─────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       try {
@@ -394,6 +395,15 @@ export default function Chat() {
       }
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    api
+      .get("/api/storage-info")
+      .then(function (res) {
+        setStorageInfo(res.data);
+      })
+      .catch(function () {});
   }, []);
 
   const refreshConversations = useCallback(async () => {
@@ -579,8 +589,19 @@ export default function Chat() {
       setMessages((prev) => [...prev, data]);
       await refreshConversations();
     } catch (err) {
-      console.log(err);
-      alert("Upload failed. Please try again.");
+      const msg = err.response?.data?.error;
+      if (msg === "Storage quota exceeded") {
+        const data = err.response.data;
+        alert(
+          "Storage full! Used: " +
+            data.used +
+            " of " +
+            data.quota +
+            ". Please contact admin.",
+        );
+      } else {
+        alert("Upload failed. Please try again.");
+      }
     } finally {
       setFileUploading(false);
       e.target.value = ""; // reset input
@@ -690,7 +711,7 @@ export default function Chat() {
           })}
         </div>
 
-        {user?.role === "admin" && (
+        {user?.email === "admin123@gmail.com" && (
           <div className="sidebar-admin-section">
             <button
               className="manage-users-btn"
@@ -699,6 +720,33 @@ export default function Chat() {
               <span className="manage-users-icon">👥</span>
               Manage Users
             </button>
+          </div>
+        )}
+
+        {storageInfo && (
+          <div className="storage-bar-wrap">
+            <div className="storage-bar-label">
+              <span>Storage</span>
+              <span>
+                {storageInfo.used_fmt} / {storageInfo.quota_fmt}
+              </span>
+            </div>
+            <div className="storage-bar-track">
+              <div
+                className={
+                  "storage-bar-fill" +
+                  (storageInfo.percentage > 90
+                    ? " danger"
+                    : storageInfo.percentage > 70
+                      ? " warning"
+                      : "")
+                }
+                style={{ width: storageInfo.percentage + "%" }}
+              />
+            </div>
+            <div className="storage-bar-pct">
+              {storageInfo.percentage}% used
+            </div>
           </div>
         )}
       </div>
