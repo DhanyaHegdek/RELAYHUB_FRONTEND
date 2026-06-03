@@ -378,6 +378,7 @@ export default function Chat() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const bottomRef = useRef(null);
   const activeConvRef = useRef(null); // ref to access activeConv inside echo callback
+  const subscribedConvsRef = useRef(new Set());
 
   // keep ref in sync with state
   useEffect(() => {
@@ -416,48 +417,116 @@ export default function Chat() {
   }, []);
 
   // ── Subscribe to ALL conversations for notifications
+  // useEffect(() => {
+  //   if (conversations.length === 0) return;
+
+  //   conversations.map((conv) => {
+  //     return echo
+  //       .private(`conversation.${conv.id}`)
+  //       .listen("MessageSent", (e) => {
+  //         const msg = e.message;
+  //         const currentConv = activeConvRef.current;
+
+  //         // If message is in the ACTIVE conversation — just add it
+  //         if (currentConv?.id === conv.id) {
+  //           setMessages((prev) => {
+  //             const exists = prev.some((m) => m.id === msg.id);
+  //             return exists ? prev : [...prev, msg];
+  //           });
+  //           refreshConversations();
+  //           return;
+  //         }
+
+  //         // If message is from another conversation — notify
+  //         if (msg.sender_id !== user?.id) {
+  //           notify({
+  //             sender: msg.sender?.name || "Someone",
+  //             message: msg.body,
+  //             convId: conv.id,
+  //             onConvClick: () => {
+  //               setActiveConv(conv);
+  //               setShowProfile(false);
+  //             },
+  //           });
+  //           refreshConversations();
+  //         }
+  //       });
+  //   });
+
+  //   return () => {
+  //     conversations.forEach((conv) => {
+  //       echo.leave(`conversation.${conv.id}`);
+  //     });
+  //   };
+  // }, [conversations, notify, refreshConversations, user?.id]);
+
+  // Effect 1 — only subscribes to NEW conversations
   useEffect(() => {
-    if (conversations.length === 0) return;
+    conversations.forEach((conv) => {
+      if (subscribedConvsRef.current.has(conv.id)) return; // skip already subscribed
+      subscribedConvsRef.current.add(conv.id);
 
-    conversations.map((conv) => {
-      return echo
-        .private(`conversation.${conv.id}`)
-        .listen("MessageSent", (e) => {
-          const msg = e.message;
-          const currentConv = activeConvRef.current;
+      echo.private(`conversation.${conv.id}`).listen("MessageSent", (e) => {
+        const msg = e.message;
+        const currentConv = activeConvRef.current;
 
-          // If message is in the ACTIVE conversation — just add it
-          if (currentConv?.id === conv.id) {
-            setMessages((prev) => {
-              const exists = prev.some((m) => m.id === msg.id);
-              return exists ? prev : [...prev, msg];
-            });
-            refreshConversations();
-            return;
-          }
+        if (currentConv?.id === conv.id) {
+          // Add to current chat messages
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === msg.id);
+            return exists ? prev : [...prev, msg];
+          });
+          // Update sidebar preview locally — NO API call
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === conv.id
+                ? { ...c, latest_message: msg, last_message_at: msg.created_at }
+                : c,
+            ),
+          );
+          return;
+        }
 
-          // If message is from another conversation — notify
-          if (msg.sender_id !== user?.id) {
-            notify({
-              sender: msg.sender?.name || "Someone",
-              message: msg.body,
-              convId: conv.id,
-              onConvClick: () => {
-                setActiveConv(conv);
-                setShowProfile(false);
-              },
-            });
-            refreshConversations();
-          }
-        });
-    });
-
-    return () => {
-      conversations.forEach((conv) => {
-        echo.leave(`conversation.${conv.id}`);
+        // Message from another conversation — notify
+        if (msg.sender_id !== user?.id) {
+          notify({
+            sender: msg.sender?.name || "Someone",
+            message: msg.file_name ? "📎 " + msg.file_name : msg.body,
+            convId: conv.id,
+            onConvClick: () => {
+              setActiveConv(conv);
+              setShowProfile(false);
+            },
+          });
+          // Update sidebar preview locally and re-sort
+          setConversations((prev) => {
+            const updated = prev.map((c) =>
+              c.id === conv.id
+                ? { ...c, latest_message: msg, last_message_at: msg.created_at }
+                : c,
+            );
+            return [...updated].sort(
+              (a, b) =>
+                new Date(b.last_message_at || 0) -
+                new Date(a.last_message_at || 0),
+            );
+          });
+        }
       });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations]); // only conversations — no other deps needed
+
+  // Effect 2 — cleanup ONLY on unmount
+  useEffect(() => {
+    const subscribedIds = subscribedConvsRef.current; // capture ref value
+    return () => {
+      subscribedIds.forEach((convId) => {
+        echo.leave(`conversation.${convId}`);
+      });
+      subscribedIds.clear();
     };
-  }, [conversations, notify, refreshConversations, user?.id]);
+  }, []);
 
   // ── Clear unread separately to avoid setState in effect body
   useEffect(() => {
@@ -526,7 +595,13 @@ export default function Chat() {
       setMessages((prev) => [...prev, data]);
       setText("");
       setReplyTo(null);
-      await refreshConversations();
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConv.id
+            ? { ...c, latest_message: data, last_message_at: data.created_at }
+            : c,
+        ),
+      );
     } catch (err) {
       console.log(err);
     } finally {
