@@ -173,6 +173,7 @@ function MessageBubble({ msg, isOwn, onReply }) {
           {new Date(msg.created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: true,
           })}
         </div>
       </div>
@@ -468,6 +469,7 @@ export default function Chat() {
 
       echo.private(`conversation.${conv.id}`).listen("MessageSent", (e) => {
         const msg = e.message;
+        console.log(msg);
         const currentConv = activeConvRef.current;
 
         if (currentConv?.id === conv.id) {
