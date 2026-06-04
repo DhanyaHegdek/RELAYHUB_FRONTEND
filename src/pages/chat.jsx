@@ -406,6 +406,7 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const activeConvRef = useRef(null); // ref to access activeConv inside echo callback
   const subscribedConvsRef = useRef(new Set());
+  const { hasRole } = useAuth();
 
   const echoRef = useRef(null);
 
@@ -569,10 +570,10 @@ export default function Chat() {
 
   // Effect 2 — cleanup ONLY on unmount
   useEffect(() => {
-    const subscribedIds = subscribedConvsRef.current; // capture ref value
+    const subscribedIds = subscribedConvsRef.current;
     return () => {
       subscribedIds.forEach((convId) => {
-        echoRef.current.leave(`conversation.${convId}`);
+        echoRef.current?.leave(`conversation.${convId}`); // optional chain saves lives
       });
       subscribedIds.clear();
     };
@@ -841,15 +842,11 @@ export default function Chat() {
         </div>
 
         {/* {user?.email === "admin123@gmail.com" && ( */}
-        {(user?.role === "admin" || user?.role === "super_admin") && (
+        {(hasRole("admin") || hasRole("super_admin")) && (
           <div className="sidebar-admin-section">
             <button
               className="manage-users-btn"
-              onClick={() => {
-                echoRef.current?.disconnect();
-                subscribedConvsRef.current.clear();
-                navigate("/users");
-              }}
+              onClick={() => navigate("/users")}
             >
               <span className="manage-users-icon">👥</span>
               Manage Users

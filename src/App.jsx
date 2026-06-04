@@ -6,20 +6,23 @@ import Chat from "./pages/Chat";
 import UsersPage from "./pages/UsersPage";
 
 function PrivateRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return null;
   return user ? children : <Navigate to="/login" replace />;
 }
 
 function GuestRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return null;
   return !user ? children : <Navigate to="/" replace />;
 }
 
-// Only admins can access this route
 function AdminRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "admin") return <Navigate to="/" replace />;
+  if (user.role !== "admin" && user.role !== "super_admin")
+    return <Navigate to="/" replace />;
   return children;
 }
 
