@@ -857,7 +857,11 @@ export default function Chat() {
           <div className="sidebar-admin-section">
             <button
               className="manage-users-btn"
-              onClick={() => navigate("/users")}
+              onClick={() => {
+                echoRef.current?.disconnect();
+                subscribedConvsRef.current.clear();
+                navigate("/users");
+              }}
             >
               <span className="manage-users-icon">👥</span>
               Manage Users
