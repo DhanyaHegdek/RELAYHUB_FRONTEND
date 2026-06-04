@@ -416,7 +416,7 @@ export default function Chat() {
     activeConvRef.current = activeConv;
   }, [activeConv]);
 
-  // ── Load conversations on mount ─────────────────────────────────────────────
+  // ── Load conversations on mount
   useEffect(() => {
     const load = async () => {
       try {
@@ -446,50 +446,6 @@ export default function Chat() {
       console.log(err);
     }
   }, []);
-
-  // ── Subscribe to ALL conversations for notifications
-  // useEffect(() => {
-  //   if (conversations.length === 0) return;
-
-  //   conversations.map((conv) => {
-  //     return echo
-  //       .private(`conversation.${conv.id}`)
-  //       .listen("MessageSent", (e) => {
-  //         const msg = e.message;
-  //         const currentConv = activeConvRef.current;
-
-  //         // If message is in the ACTIVE conversation — just add it
-  //         if (currentConv?.id === conv.id) {
-  //           setMessages((prev) => {
-  //             const exists = prev.some((m) => m.id === msg.id);
-  //             return exists ? prev : [...prev, msg];
-  //           });
-  //           refreshConversations();
-  //           return;
-  //         }
-
-  //         // If message is from another conversation — notify
-  //         if (msg.sender_id !== user?.id) {
-  //           notify({
-  //             sender: msg.sender?.name || "Someone",
-  //             message: msg.body,
-  //             convId: conv.id,
-  //             onConvClick: () => {
-  //               setActiveConv(conv);
-  //               setShowProfile(false);
-  //             },
-  //           });
-  //           refreshConversations();
-  //         }
-  //       });
-  //   });
-
-  //   return () => {
-  //     conversations.forEach((conv) => {
-  //       echo.leave(`conversation.${conv.id}`);
-  //     });
-  //   };
-  // }, [conversations, notify, refreshConversations, user?.id]);
 
   // Effect 1 — only subscribes to NEW conversations
   useEffect(() => {
