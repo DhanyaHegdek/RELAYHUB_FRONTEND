@@ -693,14 +693,10 @@ export default function Chat() {
   };
 
   const handleLogout = async () => {
-    try {
-      await api.post("/api/logout");
-    } catch (err) {
-      console.log(err);
-    }
     echoRef.current?.disconnect();
-    logout();
-    navigate("/login");
+    subscribedConvsRef.current.clear();
+    logout(); // clears localStorage + setUser(null) → triggers redirect
+    // no navigate() needed — PrivateRoute handles it automatically
   };
 
   const handleFileUpload = async (e) => {
