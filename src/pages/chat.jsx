@@ -200,7 +200,9 @@ function MessageBubble({ msg, isOwn, onReply }) {
           })}
         </div>
       </div>
-      {isOwn && <Avatar name={msg.sender ? msg.sender.name : ""} size={30} />}
+      {isOwn && (
+        <Avatar name={msg.sender?.name} size={30} avatar={msg.sender?.avatar} />
+      )}
     </div>
   );
 }
@@ -469,6 +471,13 @@ export default function Chat() {
       console.log(err);
     }
   }, []);
+
+  useEffect(() => {
+    const handleAvatarUpdate = () => refreshConversations();
+    window.addEventListener("avatar-updated", handleAvatarUpdate);
+    return () =>
+      window.removeEventListener("avatar-updated", handleAvatarUpdate);
+  }, [refreshConversations]);
 
   // Effect 1 — only subscribes to NEW conversations
   useEffect(() => {

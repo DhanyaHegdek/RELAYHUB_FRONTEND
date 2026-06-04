@@ -143,6 +143,7 @@ export default function EditProfilePanel({ onClose }) {
       setProfile(data);
       const token = localStorage.getItem("token");
       login(token, data); // updates global auth user with new avatar
+      window.dispatchEvent(new Event("avatar-updated"));
     } catch {
       setError("Failed to upload photo.");
     } finally {
