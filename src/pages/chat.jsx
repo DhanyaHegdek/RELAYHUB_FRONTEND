@@ -26,7 +26,7 @@ window.Pusher = Pusher;
 // });
 
 // ─── Avatar
-function Avatar({ name, size = 40 }) {
+function Avatar({ name, size = 40, avatar }) {
   const initials =
     name
       ?.split(" ")
@@ -36,6 +36,23 @@ function Avatar({ name, size = 40 }) {
       .slice(0, 2) || "?";
   const hue =
     [...(name || "")].reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+
+  if (avatar) {
+    return (
+      <img
+        src={`http://relayhub.test/storage/${avatar}`}
+        alt={name}
+        className="avatar"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          objectFit: "cover",
+        }}
+      />
+    );
+  }
+
   return (
     <div
       className="avatar"
@@ -98,7 +115,7 @@ function NewChatModal({ onClose, onStart, currentUserId }) {
               className="modal-user"
               onClick={() => onStart(u)}
             >
-              <Avatar name={u.name} size={38} />
+              <Avatar name={u.name} size={38} avatar={u.avatar} />
               <div>
                 <div className="modal-user-name">{u.name}</div>
                 <div className="modal-user-email">{u.email}</div>
@@ -126,7 +143,13 @@ function MessageBubble({ msg, isOwn, onReply }) {
 
   return (
     <div className={"msg-row " + (isOwn ? "own" : "other")}>
-      {!isOwn && <Avatar name={msg.sender ? msg.sender.name : ""} size={30} />}
+      {!isOwn && (
+        <Avatar
+          name={msg.sender ? msg.sender.name : ""}
+          size={30}
+          avatar={msg.sender?.avatar}
+        />
+      )}
       <div className="msg-wrap">
         {msg.reply_to && (
           <div className="msg-reply-quote">
@@ -736,7 +759,7 @@ export default function Chat() {
           onClick={() => setShowEditProfile((v) => !v)}
           title="Edit profile"
         >
-          <Avatar name={user?.name} size={34} />
+          <Avatar name={user?.name} size={34} avatar={user?.avatar} />
           <span className="sidebar-me-name">{user?.name}</span>
           <span className="online-dot" />
         </button>
@@ -771,7 +794,7 @@ export default function Chat() {
                 }}
               >
                 <div className="conv-avatar-wrap">
-                  <Avatar name={o?.name} size={44} />
+                  <Avatar name={o?.name} size={44} avatar={o?.avatar} />
                   <span
                     className={
                       onlineUserIds.has(Number(o?.id))
@@ -879,7 +902,7 @@ export default function Chat() {
                 onClick={() => setShowProfile((v) => !v)}
                 title="View profile"
               >
-                <Avatar name={other?.name} size={38} />
+                <Avatar name={other?.name} size={38} avatar={other?.avatar} />
                 <div className="msg-header-info">
                   <div className="msg-header-name">{other?.name}</div>
                   <div className="msg-header-status">
@@ -1067,7 +1090,7 @@ export default function Chat() {
               ✕
             </button>
             <div className="profile-avatar-wrap">
-              <Avatar name={other?.name} size={80} />
+              <Avatar name={other?.name} size={80} avatar={other?.avatar} />
             </div>
             <div className="profile-name">{other?.name}</div>
             <div className="profile-email">{other?.email}</div>

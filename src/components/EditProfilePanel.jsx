@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 
-function Avatar({ name, size = 64 }) {
+function Avatar({ name, size = 64, avatar, onClick, uploading }) {
   const initials =
     name
       ?.split(" ")
@@ -12,13 +12,16 @@ function Avatar({ name, size = 64 }) {
       .slice(0, 2) || "?";
   const hue =
     [...(name || "")].reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+
   return (
     <div
+      onClick={onClick}
+      title="Click to change photo"
       style={{
         width: size,
         height: size,
         borderRadius: "50%",
-        background: `hsl(${hue},50%,55%)`,
+        background: avatar ? "transparent" : `hsl(${hue},50%,55%)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -26,9 +29,40 @@ function Avatar({ name, size = 64 }) {
         color: "#fff",
         fontSize: size * 0.37,
         flexShrink: 0,
+        cursor: "pointer",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {initials}
+      {avatar ? (
+        <img
+          src={`http://relayhub.test/storage/${avatar}`}
+          alt="avatar"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        initials
+      )}
+      {/* hover overlay */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.4)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: uploading ? 1 : 0,
+          transition: "opacity 0.2s",
+          fontSize: 20,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.opacity = uploading ? 1 : 0)
+        }
+      >
+        {uploading ? "⏳" : "📷"}
+      </div>
     </div>
   );
 }
@@ -41,6 +75,8 @@ export default function EditProfilePanel({ onClose }) {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -91,6 +127,30 @@ export default function EditProfilePanel({ onClose }) {
     }
   };
 
+  const handleAvatarClick = () => avatarInputRef.current?.click();
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const { data } = await api.post("/api/profile/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setProfile(data);
+      const token = localStorage.getItem("token");
+      login(token, data); // updates global auth user with new avatar
+    } catch {
+      setError("Failed to upload photo.");
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const handleCancel = () => {
     setEditing(false);
     setError("");
@@ -118,7 +178,20 @@ export default function EditProfilePanel({ onClose }) {
       ) : (
         <div className="ep-body">
           <div className="ep-avatar-section">
-            <Avatar name={form.name || profile.name} size={72} />
+            <input
+              type="file"
+              ref={avatarInputRef}
+              onChange={handleAvatarChange}
+              accept="image/jpg,image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+            />
+            <Avatar
+              name={form.name || profile.name}
+              size={72}
+              avatar={profile.avatar}
+              onClick={handleAvatarClick}
+              uploading={avatarUploading}
+            />
             <div className={`ep-role-badge ep-role-${profile.role}`}>
               {profile.role}
             </div>
