@@ -9,21 +9,21 @@ import { useNotifications } from "../hooks/useNotifications";
 import EditProfilePanel from "../components/EditProfilePanel";
 
 window.Pusher = Pusher;
-const echo = new Echo({
-  broadcaster: "reverb",
-  key: import.meta.env.VITE_REVERB_APP_KEY,
-  wsHost: import.meta.env.VITE_REVERB_HOST,
-  wsPort: import.meta.env.VITE_REVERB_PORT,
-  forceTLS: false,
-  enabledTransports: ["ws"],
-  authEndpoint: "http://relayhub.test/api/broadcasting/auth",
-  auth: {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-      Accept: "application/json",
-    },
-  },
-});
+// const echo = new Echo({
+//   broadcaster: "reverb",
+//   key: import.meta.env.VITE_REVERB_APP_KEY,
+//   wsHost: import.meta.env.VITE_REVERB_HOST,
+//   wsPort: import.meta.env.VITE_REVERB_PORT,
+//   forceTLS: false,
+//   enabledTransports: ["ws"],
+//   authEndpoint: "http://relayhub.test/api/broadcasting/auth",
+//   auth: {
+//     headers: {
+//       Authorization: `Bearer ${localStorage.getItem("token")}`,
+//       Accept: "application/json",
+//     },
+//   },
+// });
 
 // ─── Avatar
 function Avatar({ name, size = 40 }) {
@@ -371,6 +371,7 @@ export default function Chat() {
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
   const [replyTo, setReplyTo] = useState(null);
   const [showNewChat, setShowNewChat] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
@@ -380,6 +381,35 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const activeConvRef = useRef(null); // ref to access activeConv inside echo callback
   const subscribedConvsRef = useRef(new Set());
+
+  const echoRef = useRef(null);
+
+  useEffect(() => {
+    if (!echoRef.current) {
+      echoRef.current = new Echo({
+        broadcaster: "reverb",
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: import.meta.env.VITE_REVERB_HOST,
+        wsPort: import.meta.env.VITE_REVERB_PORT,
+        forceTLS: false,
+        enabledTransports: ["ws"],
+        authEndpoint: "http://relayhub.test/api/broadcasting/auth",
+        auth: {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Accept: "application/json",
+          },
+        },
+      });
+    }
+
+    return () => {
+      if (echoRef.current) {
+        echoRef.current.disconnect();
+        echoRef.current = null;
+      }
+    };
+  }, []);
 
   // keep ref in sync with state
   useEffect(() => {
@@ -463,68 +493,98 @@ export default function Chat() {
 
   // Effect 1 — only subscribes to NEW conversations
   useEffect(() => {
+    console.log("SUBSCRIBING TO CONVERSATIONS", conversations);
     conversations.forEach((conv) => {
-      if (subscribedConvsRef.current.has(conv.id)) return; // skip already subscribed
+      if (subscribedConvsRef.current.has(conv.id)) return;
+
       subscribedConvsRef.current.add(conv.id);
 
-      echo.private(`conversation.${conv.id}`).listen("MessageSent", (e) => {
-        const msg = e.message;
-        console.log(msg);
-        const currentConv = activeConvRef.current;
+      echoRef.current
+        .join(`conversation.${conv.id}`)
 
-        if (currentConv?.id === conv.id) {
-          // Add to current chat messages
-          setMessages((prev) => {
-            const exists = prev.some((m) => m.id === msg.id);
-            return exists ? prev : [...prev, msg];
+        .here((users) => {
+          setOnlineUserIds((prev) => {
+            const next = new Set(prev);
+            users.forEach((u) => next.add(Number(u.id)));
+            return next;
           });
-          // Update sidebar preview locally — NO API call
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === conv.id
-                ? { ...c, latest_message: msg, last_message_at: msg.created_at }
-                : c,
-            ),
-          );
-          return;
-        }
+        })
+        .joining((u) => {
+          setOnlineUserIds((prev) => new Set([...prev, Number(u.id)]));
+        })
+        .leaving((u) => {
+          setOnlineUserIds((prev) => {
+            const next = new Set(prev);
+            next.delete(Number(u.id));
+            return next;
+          });
+        })
 
-        // Message from another conversation — notify
-        if (msg.sender_id !== user?.id) {
-          notify({
-            sender: msg.sender?.name || "Someone",
-            message: msg.file_name ? "📎 " + msg.file_name : msg.body,
-            convId: conv.id,
-            onConvClick: () => {
-              setActiveConv(conv);
-              setShowProfile(false);
-            },
-          });
-          // Update sidebar preview locally and re-sort
-          setConversations((prev) => {
-            const updated = prev.map((c) =>
-              c.id === conv.id
-                ? { ...c, latest_message: msg, last_message_at: msg.created_at }
-                : c,
+        .listen("MessageSent", (e) => {
+          const msg = e.message;
+          const currentConv = activeConvRef.current;
+
+          if (currentConv?.id === conv.id) {
+            setMessages((prev) => {
+              const exists = prev.some((m) => m.id === msg.id);
+              return exists ? prev : [...prev, msg];
+            });
+
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === conv.id
+                  ? {
+                      ...c,
+                      latest_message: msg,
+                      last_message_at: msg.created_at,
+                    }
+                  : c,
+              ),
             );
-            return [...updated].sort(
-              (a, b) =>
-                new Date(b.last_message_at || 0) -
-                new Date(a.last_message_at || 0),
-            );
-          });
-        }
-      });
+
+            return;
+          }
+
+          if (msg.sender_id !== user?.id) {
+            notify({
+              sender: msg.sender?.name || "Someone",
+              message: msg.file_name ? "📎 " + msg.file_name : msg.body,
+              convId: conv.id,
+              onConvClick: () => {
+                setActiveConv(conv);
+                setShowProfile(false);
+              },
+            });
+
+            setConversations((prev) => {
+              const updated = prev.map((c) =>
+                c.id === conv.id
+                  ? {
+                      ...c,
+                      latest_message: msg,
+                      last_message_at: msg.created_at,
+                    }
+                  : c,
+              );
+
+              return [...updated].sort(
+                (a, b) =>
+                  new Date(b.last_message_at || 0) -
+                  new Date(a.last_message_at || 0),
+              );
+            });
+          }
+        });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversations]); // only conversations — no other deps needed
+  }, [conversations]);
 
   // Effect 2 — cleanup ONLY on unmount
   useEffect(() => {
     const subscribedIds = subscribedConvsRef.current; // capture ref value
     return () => {
       subscribedIds.forEach((convId) => {
-        echo.leave(`conversation.${convId}`);
+        echoRef.current.leave(`conversation.${convId}`);
       });
       subscribedIds.clear();
     };
@@ -638,6 +698,7 @@ export default function Chat() {
     } catch (err) {
       console.log(err);
     }
+    echoRef.current?.disconnect();
     logout();
     navigate("/login");
   };
@@ -686,6 +747,7 @@ export default function Chat() {
   };
 
   const other = otherUser(activeConv);
+  const isOtherOnline = onlineUserIds.has(Number(other?.id));
 
   return (
     <div className="chat-layout">
@@ -758,7 +820,13 @@ export default function Chat() {
               >
                 <div className="conv-avatar-wrap">
                   <Avatar name={o?.name} size={44} />
-                  <span className="conv-dot" />
+                  <span
+                    className={
+                      onlineUserIds.has(Number(o?.id))
+                        ? "conv-dot online"
+                        : "conv-dot"
+                    }
+                  />
                 </div>
                 <div className="conv-info">
                   <div className="conv-name">{o?.name}</div>
@@ -789,7 +857,7 @@ export default function Chat() {
         </div>
 
         {/* {user?.email === "admin123@gmail.com" && ( */}
-        {user?.role === "admin" && (
+        {(user?.role === "admin" || user?.role === "super_admin") && (
           <div className="sidebar-admin-section">
             <button
               className="manage-users-btn"
@@ -859,7 +927,10 @@ export default function Chat() {
                 <div className="msg-header-info">
                   <div className="msg-header-name">{other?.name}</div>
                   <div className="msg-header-status">
-                    <span className="online-dot" /> Online
+                    <span
+                      className={isOtherOnline ? "online-dot" : "offline-dot"}
+                    />
+                    {isOtherOnline ? "Online" : "Offline"}
                   </div>
                 </div>
               </button>

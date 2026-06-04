@@ -6344,3 +6344,26 @@ textarea {
   margin-top: 4px;
   text-align: right;
 }
+
+.conv-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b7280; /* gray = offline */
+  border: 2px solid var(--bg, #1a1a2e);
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+.conv-dot.online {
+  background: #22c55e; /* green = online */
+}
+
+.offline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+  display: inline-block;
+  margin-right: 4px;
+}
