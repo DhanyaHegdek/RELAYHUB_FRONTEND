@@ -1,16 +1,14 @@
 import { useState, useEffect } from "react";
-import api from "../api/axios";
-
 import { AuthContext } from "./AuthContext";
+import api from "../api/axios";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // ← add loading state
 
   // On mount — re-fetch user from server to get fresh role
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       Promise.resolve().then(() => setLoading(false));
       return;
@@ -23,6 +21,7 @@ export function AuthProvider({ children }) {
         setUser(data);
       })
       .catch(() => {
+        // Token expired or invalid — clear everything
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
@@ -67,7 +66,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasRole, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
