@@ -382,16 +382,13 @@ export default function Chat() {
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef(null);
   const [storageInfo, setStorageInfo] = useState(null);
-
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth();
   const navigate = useNavigate();
   const { toasts, unread, notify, dismiss, clearUnread } = useNotifications();
-
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -407,7 +404,6 @@ export default function Chat() {
   const activeConvRef = useRef(null); // ref to access activeConv inside echo callback
   const subscribedConvsRef = useRef(new Set());
   const { hasRole } = useAuth();
-
   const echoRef = useRef(null);
 
   useEffect(() => {
@@ -578,6 +574,29 @@ export default function Chat() {
       subscribedIds.clear();
     };
   }, []);
+
+  // Listen for role changes broadcast to this user
+  useEffect(() => {
+    if (!user?.id) return;
+
+    echoRef.current
+      .private(`App.Models.User.${user.id}`)
+      .listen("RoleChanged", async () => {
+        // Re-fetch user from server to get updated role
+        try {
+          const { data } = await api.get("/api/me");
+          localStorage.setItem("user", JSON.stringify(data));
+          // Update AuthContext user state
+          login(localStorage.getItem("token"), data);
+        } catch (err) {
+          console.log(err);
+        }
+      });
+
+    return () => {
+      echoRef.current?.leave(`App.Models.User.${user.id}`);
+    };
+  }, [user?.id, login]);
 
   // ── Clear unread separately to avoid setState in effect body
   useEffect(() => {
