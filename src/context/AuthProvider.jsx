@@ -5,10 +5,17 @@ import { AuthContext } from "./AuthContext";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(() => !!localStorage.getItem("token"));
+  const [loading, setLoading] = useState(true);
 
   // On mount — re-fetch user from server to get fresh role
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      Promise.resolve().then(() => setLoading(false));
+      return;
+    }
+
     api
       .get("/api/me")
       .then(({ data }) => {
@@ -16,7 +23,6 @@ export function AuthProvider({ children }) {
         setUser(data);
       })
       .catch(() => {
-        // Token expired or invalid — clear everything
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
