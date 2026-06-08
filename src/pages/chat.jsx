@@ -142,7 +142,10 @@ function MessageBubble({ msg, isOwn, onReply }) {
   };
 
   return (
-    <div className={"msg-row " + (isOwn ? "own" : "other")}>
+    <div
+      id={`msg-${msg.id}`}
+      className={"msg-row " + (isOwn ? "own" : "other")}
+    >
       {!isOwn && (
         <Avatar
           name={msg.sender ? msg.sender.name : ""}
@@ -991,9 +994,11 @@ export default function Chat() {
                               2000,
                             );
                           }
-                          setShowSearch(false);
-                          setSearchQuery("");
-                          setSearchResults([]);
+                          setTimeout(() => {
+                            setShowSearch(false);
+                            setSearchQuery("");
+                            setSearchResults([]);
+                          }, 100);
                         }}
                       >
                         <div className="search-result-sender">
